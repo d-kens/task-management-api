@@ -17,8 +17,14 @@ export class TasksService {
         const query = this.taskRepository.createQueryBuilder('task');
 
         // filterby status
+        if (status) {
+            query.andWhere('task.status = :status', { status });
+        }
 
         // filter by searchTerm
+        if (searchTerm) {
+            query.andWhere('(task.title LIKE :searchTerm OR task.description LIKE :searchTerm)', { searchTerm: `%${searchTerm}%` });
+        }
 
         const tasks = await query.getMany();
         return tasks;
