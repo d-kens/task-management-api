@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CredentialsDto } from './dto/credential.dto';
+import { UserDto } from './dto/user.dto';
+import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { User } from 'src/users/user.entity';
 
@@ -10,12 +11,13 @@ export class UsersService {
         @InjectRepository(User) private readonly userRepository: Repository<User>
     ) {}
 
-    async create(credentialsDto: CredentialsDto) {
-        const { username, password } = credentialsDto;
+    async createUser(userDto: UserDto) {
+        const { username, password } = userDto;
 
         const user = new User();
         user.username = username;
-        user.password = password;
+        user.salt = await bcrypt.genSalt()
+        user.password = await this.hashPassword(password, user.salt);
 
         try {
             await this.userRepository.save(user);
@@ -26,5 +28,21 @@ export class UsersService {
                 throw new InternalServerErrorException();
             }
         }
+    }
+
+    async validateUserPassword(userDto: UserDto) {
+        const { username, password } = userDto;
+        const user = await this.userRepository.findOne({ where: { username } });
+
+        if(user && await user.validatePassword(password)) {
+            return user.username;
+        } else {
+            return null;
+        }
+    }
+
+
+    private async hashPassword(password: string, salt: string): Promise<string> {
+        return bcrypt.hash(password, salt)
     }
 }
