@@ -19,7 +19,7 @@ export class AuthService {
     async signin(userDto: UserDto): Promise<{ accessToken: string }> {
         const username = await this.userService.validateUserPassword(userDto);
 
-        if(!username) {
+        if(!username) { // falsy - invalid credentials
             throw new UnauthorizedException('Invalid credentials')
         }
 
